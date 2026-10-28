@@ -1,0 +1,37 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_DEFAULT_REGION: ap-south-1
+    IMAGE_REPO_NAME: brain-tasks-app
+
+phases:
+  pre_build:
+    commands:
+      - |
+        set -eu
+        AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+        IMAGE_URI="${REGISTRY}/${IMAGE_REPO_NAME}"
+        IMAGE_TAG="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
+        export REGISTRY IMAGE_URI IMAGE_TAG
+        aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+
+  build:
+    commands:
+      - docker build -t "${IMAGE_URI}:${IMAGE_TAG}" .
+
+  post_build:
+    commands:
+      - |
+        set -eu
+        test "$CODEBUILD_BUILD_SUCCEEDING" = "1"
+        docker push "${IMAGE_URI}:${IMAGE_TAG}"
+        mkdir -p rendered
+        sed "s|image: .*|image: ${IMAGE_URI}:${IMAGE_TAG}|" k8s/deployment.yaml > rendered/deployment.yaml
+        cp k8s/service.yaml rendered/service.yaml
+
+artifacts:
+  files:
+    - rendered/deployment.yaml
+    - rendered/service.yaml
