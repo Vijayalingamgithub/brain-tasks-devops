@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: brain-tasks-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: brain-tasks-app
+  template:
+    metadata:
+      labels:
+        app: brain-tasks-app
+    spec:
+      containers:
+        - name: brain-tasks-app
+          image: 680391390182.dkr.ecr.ap-south-1.amazonaws.com/brain-tasks-app:v1
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
