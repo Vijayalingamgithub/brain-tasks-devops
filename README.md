@@ -89,3 +89,5 @@ No dependencies are required
 No build process is required
 
 No package.json is needed
+
+CI/CD verification: GitHub push triggers build and EKS deployment.
